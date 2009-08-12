@@ -1,0 +1,112 @@
+<html>
+ <head>
+  <script src="csp.js"></script>
+  <script>
+    var c;
+    function failure() {
+        var d = log.apply(this, arguments);
+        d.setAttribute("class", "event failure");
+    }
+    var num = 0;
+    function log() {
+        var output = "<span class='num'>[" + (++num) + "]</span>"
+        for (var i = 0, arg; arg=arguments[i]; ++i) {
+            if (typeof(arg) === "string") {
+                output += arg;
+            }
+            else {
+                try {
+                    output += csp.JSON.stringify(arg)
+                } catch(e) {
+                    output += arg.toString()
+                }
+            }
+            if (i < arguments.length-1) {
+                output += " ";
+            }
+        }
+        var history = document.getElementById("history")
+        var shouldScroll = (history.scrollTop + history.clientHeight) == history.scrollHeight;
+        var d = document.createElement('div')
+        d.setAttribute("class", "event")
+        d.innerHTML = output;
+        history.appendChild(d);
+        if (shouldScroll) {
+            history.scrollTop = history.scrollHeight;
+        }
+        return d;
+    }
+    function startTest() {
+        var url = document.getElementById("baseUrl").value
+        c = new csp.CometSession()
+        var buffer = ""
+        var payload = "Hello World"
+        var shouldClose = false;
+        c.onopen = function() {
+            log('connected to', url);
+            c.write(payload)
+            log("SEND: \"" + payload + "\"")
+        }
+        c.onclose = function(code) {
+            if (!shouldClose) {
+                failure('unexpected close, code:', code);
+            }
+            else {
+                log('csp session closed, code:', code);
+            }
+        }
+        c.onread = function(data) {
+            log("RECV", "\"" + data + "\"")
+            var m = payload.match(data);
+            if (m === null || m.index != 0) {
+                failure("Received \"", data, "\" Expected \"", payload, "\"");
+                shouldClose = true;
+                c.close();
+            }
+            else {
+                payload = payload.substring(data.length)
+                if (!payload) {
+                    shouldClose = true;
+                    c.close();
+                }
+            }
+            
+        }
+        c.connect(url);
+    }
+    
+  </script>
+  <style type="text/css">
+   #history {
+        overflow-y: scroll; 
+        height: 300px;
+        width: 600px;
+        border: 1px solid black;
+    }
+    .event {
+        margin: 0;
+        padding: 5px;
+        border-bottom: 1px dashed black;
+    }
+    .num {
+        width: 50px;
+        text-align: right;
+        font-size: 120%;
+        font-weight: bold;
+        margin-right: 5px;
+    }
+    .failure {
+        color: red;
+    }
+    
+  </style>
+ </head>
+ <body>
+  <h1>CSP Browser-based test</h1>
+  <input type=text id="baseUrl" value="http://localhost:8050">
+  <button onClick="javascript:startTest()">Go</button>
+  <div id="history">
+
+  </div>
+ </body>
+</html>

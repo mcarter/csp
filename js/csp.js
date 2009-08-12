@@ -173,6 +173,9 @@ var Transport = function(cspId, url) {
     self.doSend = function() {
         throw new Error("Not Implemented");
     }
+    self.close = function() {
+        self.stop();
+    }
     self.stop = function() {
         self.opened = false;
         clearTimeout(cometTimer);
@@ -459,9 +462,6 @@ transports.jsonp = function(cspId, url) {
     this.reconnect = function() {
         var args = { s: self.sessionKey, a: self.lastEventId }
         makeRequest("comet", "/comet", args, self.cometCb, self.cometErr, 40);
-    }
-    this.stop = function() {
-        Transport.stop.call(self);
     }
     this.toPayload = function(data) {
         var payload = escape(JSON.stringify([[++self.lastSentId, 0, data]])); // XXX: firefox only!
