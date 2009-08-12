@@ -19,3 +19,5 @@ class TestComet(object):
         if packets != []:
             raise CSPException("Invalid comet response: expected empty batch", response)                
         print response.formatted_transcript()
+
+

@@ -55,6 +55,11 @@ csp.util.isSameDomain = function(urlA, urlB) {
 }
 
 csp.util.chooseTransport = function(url, options) {
+    console.log(location.toString())
+    if (location.toString().match('file://').index === 0) {
+      console.log('local file, use jsonp')
+      return transports.jsonp // XXX      
+    }
     console.log('choosing');
     if (csp.util.isSameDomain(url, location.toString())) {
         console.log('same domain, xhr');
@@ -266,6 +271,10 @@ transports.xhr = function(cspId, url) {
         var timer = null;
 //        console.log('setting on ready state change');
         xhr.onreadystatechange = function() {
+            console.log('ready state', xhr.readyState)
+            try {
+              console.log('status', xhr.status)
+            } catch (e) {}
             if (aborted) { 
                 //console.log('aborted'); 
                 return eb(); 

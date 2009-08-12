@@ -12,13 +12,14 @@ class TestReflectResponse(object):
         payload = "<script>alert('woot')</script>"
         url = self.base_url +  "/reflect?s=" + session + "&d=" + payload
         response = http.make_request(url, reset_transcript=False, socket=handshake_response.socket)
+#        response.prepend_transcript(handshake_response.socket.transcript)
         if response.code != 200:
             raise CSPException("Reflect (GET) should return status code 200",
                                response)
         if payload != response.body:
             raise CSPException("Reflect (GET) returned invalid response body.",
                                response)
-                               
+        print response.formatted_transcript()
     def test_reflect_post(self):
         session, handshake_response = protocol.handshake()
         payload = "<script>alert('woot')</script>"

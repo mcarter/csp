@@ -10,12 +10,10 @@ def encode_query(query):
 def make_request(url, **kwargs):
     e = coros.event()
     api.spawn(_make_request, e, url, **kwargs)
-    result = e.wait()
-    if isinstance(result, Exception):
-        raise result
-    return result
+    return e.wait()
     
 def _make_request(e, url, **kwargs):
+    timeout = kwargs.pop('timeout', None)
     method = kwargs.pop('method', 'GET')
     body = kwargs.pop('body', "")
     version = kwargs.pop('version', "1.1")
@@ -38,6 +36,10 @@ def _make_request(e, url, **kwargs):
             socket.transcript = previous_transcript
     if reset_transcript:
         socket.start_transcript()
+    response = HTTPResponse(socket)
+    timer = None
+    if timeout:
+        timer = api.exc_after(timeout, error.HTTPProtocolError("timeout", response))
     socket.send("%s %s HTTP/%s\r\n" % (method.upper(), path, version))
     socket.send("Host: %s\r\n" % (host_header,))
     for key, val in headers.items():
@@ -46,7 +48,6 @@ def _make_request(e, url, **kwargs):
         socket.send("Content-Length: %s\r\n" % (len(body),))
     socket.send('\r\n')
     socket.send(body)
-    response = HTTPResponse(socket)
     try:
         response.protocol, response.code, response.status = socket.read_line().split(' ', 2)
         response.code = int(response.code)
@@ -60,8 +61,10 @@ def _make_request(e, url, **kwargs):
         e.send(response)
     except:
         socket.close()
-        e.send(error.HTTPProtocolError("Protocol Error", response))
-
+        e.send_exception(error.HTTPProtocolError("Protocol Error", response))
+    finally:
+        if timer:
+            timer.cancel()
         
 class StructuredSocket(object):
     def __init__(self, hostname, port):

@@ -54,7 +54,6 @@ class TestHandshakeResponse(object):
     
     def test_handshake_get_valid(self):
         response = http.make_request(self.base_url +  "/handshake?d={}")
-        print 'response.body is', response.body
         if response.code != 200:
             raise CSPException("Valid Handshake should return status code 200",
                                response)
