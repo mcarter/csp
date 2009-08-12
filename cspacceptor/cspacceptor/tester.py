@@ -126,10 +126,17 @@ def test_handshake_get_valid():
         data = urllib2.urlopen(baseUrl + '/handshake?d={}').read()
     except HTTPError, response:
         raise TestException("Valid Handshake request received response error with status", lastTranscript)
-    # except Exception, e:
-    #     raise TestException("something went very wrong", lastTranscript)
     verify_handshake_response(data)
-    
+
+@test
+def test_handshake_get_valid_w_data():
+    try:
+        data = urllib2.urlopen(baseUrl + '/handshake?d={"spam":"eggs"}').read()
+    except HTTPError, response:
+        raise TestException("Valid Handshake request received response error with status", lastTranscript)
+    verify_handshake_response(data)
+
+
 @test
 def test_handshake_get_valid_rsrp():
     try:
