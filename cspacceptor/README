@@ -1,0 +1,6 @@
+This is the CSP acceptance test suite.
+
+Dependancies:
+eventlet
+nose
+simplejson (or python 2.6+)
