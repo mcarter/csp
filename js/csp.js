@@ -305,7 +305,7 @@ transports.xhr = function(cspId, url) {
 
     this.handshake = function() {
         self.opened = true;
-        makeRequest("send", "/handshake", {}, self.handshakeCb, self.handshakeErr, 10);
+        makeRequest("send", "/handshake", { d:"{}" }, self.handshakeCb, self.handshakeErr, 10);
     }
     this.doSend = function() {
         var args;
@@ -319,9 +319,6 @@ transports.xhr = function(cspId, url) {
     this.reconnect = function() {
         var args = { s: self.sessionKey, a: self.lastEventId }
         makeRequest("comet", "/comet", args, self.cometCb, self.cometErr, 40);
-    }
-    this.stop = function() {
-        Transport.stop.call(self);
     }
     this.toPayload = function(data) {
         var payload = escape(JSON.stringify([[++self.lastSentId, 0, data]]));
@@ -448,7 +445,7 @@ transports.jsonp = function(cspId, url) {
 
     this.handshake = function() {
         self.opened = true;
-        makeRequest("send", "/handshake", {}, self.handshakeCb, self.handshakeErr, 10);
+        makeRequest("send", "/handshake", {d: "{}"}, self.handshakeCb, self.handshakeErr, 10);
     }
     this.doSend = function() {
         var args;
