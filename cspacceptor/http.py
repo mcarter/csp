@@ -1,23 +1,36 @@
 from urlparse import urlparse
-from urllib import quote
+from urllib import quote, urlencode
 from eventlet import api
+from cgi import parse_qs
+
+def encode_query(query):
+    parsed = parse_qs(query)
+    non_listed = dict((k, v[0]) for (k,v) in parsed.items())
+    return urlencode(non_listed)
+
 def make_request(url, **kwargs):
     method = kwargs.pop('method', 'GET')
     body = kwargs.pop('body', "")
     version = kwargs.pop('version', "1.1")
     socket = kwargs.pop('socket', None)
+    reset_transcript = kwargs.pop('reset_transcript', True)
+    previous_transcript = []
     if socket and not socket.open:
+        previous_transcript = socket.transcript
         socket = None
     # TODO: make headers the right case
     headers = kwargs
     parsed = urlparse(url)
     path = quote(parsed.path or '/')
     if parsed.query:
-        path += '?' + quote(parsed.query)
+        path += '?' + encode_query(parsed.query)
     host_header = parsed.hostname + ((parsed.port == 80) and "" or ":" + str(parsed.port))
     if not socket:
-        socket = StructuredSocket(api.connect_tcp((parsed.hostname, parsed.port or 80)))
-    socket.start_transcript()
+        socket = StructuredSocket(parsed.hostname, parsed.port or 80)
+        if not reset_transcript and previous_transcript:
+            socket.transcript = previous_transcript
+    if reset_transcript:
+        socket.start_transcript()
     socket.send("%s %s HTTP/%s\r\n" % (method.upper(), path, version))
     socket.send("Host: %s\r\n" % (host_header,))
     for key, val in headers.items():
@@ -47,8 +60,9 @@ def make_request(url, **kwargs):
 
         
 class StructuredSocket(object):
-    def __init__(self, socket):
-        self.socket = socket
+    def __init__(self, hostname, port):
+        self.socket = api.connect_tcp((hostname, port))
+        self.open = True
         self.buffer = ""
         self.transcript = []
         
@@ -82,11 +96,10 @@ class StructuredSocket(object):
     
     def send(self, data):
         self.socket.send(data)
-        if not self.transcript:
-            self.transcript.append(['SEND', data])
-            return
-        if self.transcript[-1][0] == 'SEND':
+        if self.transcript and self.transcript[-1][0] == 'SEND':
             self.transcript[-1][1] += data
+            return
+        self.transcript.append(['SEND', data])
         
     def close(self):
         try:
@@ -95,8 +108,8 @@ class StructuredSocket(object):
             pass
         
 class HTTPResponse(object):
-    def __init__(self, reader):
-        self.reader = reader
+    def __init__(self, socket):
+        self.socket = socket
         self.version = None
         self.code = None
         self.status = None
@@ -109,6 +122,11 @@ class HTTPResponse(object):
     def formatted_transcript(self):
         output = ""
         for (dir, data) in self.transcript:
-            output += "%s:\n%s\n" % (dir, data.replace('\n', '\\n\n').replace('\r', '\\r'))
+            output += "%s:\n%s\n\n" % (dir, data.replace('\n', '\\n\n').replace('\r', '\\r'))
         return output
-            
+
+    def prepend_transcript(self, transcript):
+        self.transcript = transcript + self.transcript
+        
+    def append_transcript(self, transcript):
+        self.transcript = self.transcript + transcript
