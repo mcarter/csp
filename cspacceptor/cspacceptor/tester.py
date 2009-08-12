@@ -1,5 +1,5 @@
 import socket
-baseUrl = 'http://localhost:8050'
+baseUrl = 'http://localhost:8000'
 
 lastTranscript = []
 origSocket = socket.socket
@@ -41,8 +41,10 @@ class FPWrapper(object):
         else:
             lastTranscript.append(['RECV', data])
         return data
-    def __getattr__(self, item):
-        return self.fp.__getattr__(self, item)
+    def close(self, *args, **kwargs):
+        return self.fp.close(*args, **kwargs)
+#    def __getattr__(self, item):
+#        return self.fp.__getattr__(self, item)
     
 socket.socket = socket2
 
@@ -124,11 +126,16 @@ def test_handshake_get_valid():
         data = urllib2.urlopen(baseUrl + '/handshake?d={}').read()
     except HTTPError, response:
         raise TestException("Valid Handshake request received response error with status", lastTranscript)
+    # except Exception, e:
+    #     raise TestException("something went very wrong", lastTranscript)
     verify_handshake_response(data)
     
 @test
 def test_handshake_get_valid_rsrp():
-    data = urllib2.urlopen(baseUrl + '/handshake?d={}&rp=testing&rs=;').read()
+    try:
+        data = urllib2.urlopen(baseUrl + '/handshake?d={}&rp=testing&rs=;').read()
+    except:
+        raise TestException("Handshake returned non-200 status", lastTranscript)
     if not data.startswith('testing'):
         raise TestException("Handshake fails to send back 'rp' value", lastTranscript)
     if not data.endswith(';'):
@@ -154,6 +161,12 @@ def main():
                 print
             print '================'
             print
+        except Exception, e:
+            print '================'
+            print 'FAILED', failed, test.func_name
+            print e
+        else:
+            print "PASSED", test.func_name
         
 if __name__ == "__main__":
     main()
