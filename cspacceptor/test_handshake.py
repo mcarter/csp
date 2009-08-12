@@ -54,6 +54,7 @@ class TestHandshakeResponse(object):
     
     def test_handshake_get_valid(self):
         response = http.make_request(self.base_url +  "/handshake?d={}")
+        print 'response.body is', response.body
         if response.code != 200:
             raise CSPException("Valid Handshake should return status code 200",
                                response)
@@ -70,7 +71,7 @@ class TestHandshakeResponse(object):
         if not response.body.endswith(';'):
             raise CSPException("Handshake returns invalid REQUEST_SUFFIX",
                                response)
-        reply = response.body[1+len('testing'):-1]
+        reply = response.body[len('testing'):-len(';')]
         self._verify_handshake_response(reply, response)
         
     def test_handshake_get_valid_w_data(self):

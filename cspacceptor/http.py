@@ -1,14 +1,21 @@
 from urlparse import urlparse
 from urllib import quote, urlencode
-from eventlet import api
+from eventlet import api, coros
 from cgi import parse_qs
+import error
 
 def encode_query(query):
-    parsed = parse_qs(query)
-    non_listed = dict((k, v[0]) for (k,v) in parsed.items())
-    return urlencode(non_listed)
+    return urlencode(dict(v.split('=', 1) for v in query.split('&')))
 
 def make_request(url, **kwargs):
+    e = coros.event()
+    api.spawn(_make_request, e, url, **kwargs)
+    result = e.wait()
+    if isinstance(result, Exception):
+        raise result
+    return result
+    
+def _make_request(e, url, **kwargs):
     method = kwargs.pop('method', 'GET')
     body = kwargs.pop('body', "")
     version = kwargs.pop('version', "1.1")
@@ -35,8 +42,8 @@ def make_request(url, **kwargs):
     socket.send("Host: %s\r\n" % (host_header,))
     for key, val in headers.items():
         socket.send('%s: %s\r\n' % (key, val))
-    if method.lower() == 'POST' and body:
-        socket.send("Content-Length: %s\rn" % (len(body),))
+    if method.lower() == 'post' and body:
+        socket.send("Content-Length: %s\r\n" % (len(body),))
     socket.send('\r\n')
     socket.send(body)
     response = HTTPResponse(socket)
@@ -50,13 +57,10 @@ def make_request(url, **kwargs):
             response.headers[key] = val
         if response.get_body_length():
             response.body = socket.read_bytes(response.get_body_length())
-        response.transcript = socket.transcript
-        return response
-    except:        
+        e.send(response)
+    except:
         socket.close()
-        print socket.transcript
-        raise
-        raise HTTPProtocolError()
+        e.send(error.HTTPProtocolError("Protocol Error", response))
 
         
 class StructuredSocket(object):
@@ -121,12 +125,12 @@ class HTTPResponse(object):
 
     def formatted_transcript(self):
         output = ""
-        for (dir, data) in self.transcript:
+        for (dir, data) in self.socket.transcript:
             output += "%s:\n%s\n\n" % (dir, data.replace('\n', '\\n\n').replace('\r', '\\r'))
         return output
 
     def prepend_transcript(self, transcript):
-        self.transcript = transcript + self.transcript
+        self.socket.transcript = transcript + self.socket.transcript
         
     def append_transcript(self, transcript):
-        self.transcript = self.transcript + transcript
+        self.socket.transcript = self.socket.transcript + transcript
