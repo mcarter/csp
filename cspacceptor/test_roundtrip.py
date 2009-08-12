@@ -27,6 +27,7 @@ class TestRoundtrip(object):
         api.spawn(send_request, send_event)
         result, comet_response = comet_event.wait()
         send_response = send_event.wait()
+        send_response.prepend_transcript(handshake_response.socket.transcript)
         send_response.append_transcript(comet_response.socket.transcript)
         if result != 'abc':
             raise CSPException("Received different data than we sent.", send_response)
