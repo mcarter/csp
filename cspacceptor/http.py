@@ -19,6 +19,7 @@ def _make_request(e, url, **kwargs):
     version = kwargs.pop('version', "1.1")
     socket = kwargs.pop('socket', None)
     reset_transcript = kwargs.pop('reset_transcript', True)
+    incremental_event = kwargs.pop('incremental_event', None)
     previous_transcript = []
     if socket and not socket.open:
         previous_transcript = socket.transcript
@@ -51,15 +52,39 @@ def _make_request(e, url, **kwargs):
     try:
         response.protocol, response.code, response.status = socket.read_line().split(' ', 2)
         response.code = int(response.code)
-        while True:
+        while True:            
             header_line = socket.read_line()
             if not header_line: break
             key, val = header_line.split(': ')
             response.headers[key] = val
-        if response.get_body_length():
-            response.body = socket.read_bytes(response.get_body_length())
+        if response.get_content_length():
+            response.body = socket.read_bytes(response.get_content_length())
+        elif incremental_event != None:
+            if response.protocol.lower() == 'http/1.0':
+                while True: # HTTP 1.0, read streaming HTTP response
+                    data = socket.read_stream()
+                    incremental_event.send(data)
+                    incremental_event.reset()
+                    if not data:
+                        break
+            elif response.protocol.lower() == 'http/1.1':
+                while True:
+                    chunk_description = socket.read_line()
+#                    print 'chunk description', chunk_description
+                    chunk_size = int(chunk_description, 16)
+                    if not chunk_size:
+                        incremental_event.send('')
+                        break
+                    chunk = socket.read_bytes(chunk_size)
+                    skip_this = socket.read_line()
+#                    print 'SKIPPING', repr(skip_this)
+#                    print 'send back', chunk
+                    incremental_event.send(chunk)
+            else:
+                print 'wha?'
         e.send(response)
-    except:
+    except Exception, err:
+#        raise
         socket.close()
         e.send_exception(error.HTTPProtocolError("Protocol Error", response))
     finally:
@@ -91,9 +116,18 @@ class StructuredSocket(object):
         self.buffer = self.buffer[i + len(delimiter):]
         return output
     
+    def read_stream(self):
+        if self.buffer:
+            data = self.buffer
+            self.buffer = ""
+            return data
+        self._read()
+        return self.buffer
+        
     def _read(self):
         data = self.socket.recv(4096)
         if not data:
+            self.transcript.append(['LOST', ''])
             raise ConnectionLost()
         self.buffer += data
         if self.transcript and self.transcript[-1][0] == 'RECV':
@@ -102,7 +136,12 @@ class StructuredSocket(object):
         self.transcript.append(['RECV', data])
     
     def send(self, data):
-        self.socket.send(data)
+        try:
+            self.socket.send(data)
+        except:
+            self.transcript.append(['LOST', ''])
+            raise ConnectionLost()
+            
         if self.transcript and self.transcript[-1][0] == 'SEND':
             self.transcript[-1][1] += data
             return
@@ -123,7 +162,7 @@ class HTTPResponse(object):
         self.headers = {}
         self.body = None
         
-    def get_body_length(self):
+    def get_content_length(self):
         return int(self.headers.get('Content-Length', 0))
 
     def formatted_transcript(self):

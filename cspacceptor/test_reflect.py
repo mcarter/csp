@@ -10,7 +10,7 @@ class TestReflectResponse(object):
     def test_reflect_get(self):
         session, handshake_response = protocol.handshake()
         payload = "<script>alert('woot')</script>"
-        url = self.base_url +  "/reflect?s=" + session + "&d=" + payload
+        url = self.base_url +  "/reflect?s=" + session.key + "&d=" + payload
         response = http.make_request(url, reset_transcript=False, socket=handshake_response.socket)
 #        response.prepend_transcript(handshake_response.socket.transcript)
         if response.code != 200:
@@ -24,7 +24,7 @@ class TestReflectResponse(object):
         session, handshake_response = protocol.handshake()
         payload = "<script>alert('woot')</script>"
         url = self.base_url +  "/reflect"
-        body = "s=" + session + "&d=" + payload
+        body = "s=" + session.key + "&d=" + payload
         response = http.make_request(url, method='POST', body=body, 
                     reset_transcript=False, socket=handshake_response.socket)
         if response.code != 200:

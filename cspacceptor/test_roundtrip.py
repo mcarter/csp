@@ -12,12 +12,12 @@ class TestRoundtrip(object):
         session, handshake_response = protocol.handshake()
         def comet_request(event):
             try:
-                event.send(protocol.comet(session))
+                event.send(session.comet())
             except Exception, e:
                 event.send_exception(e)
         def send_request(event):
             try:
-                event.send(protocol.send(session, "abc"))
+                event.send(session.send("abc"))
             except Exception, e:
                 event.send_exception(e)
                 
