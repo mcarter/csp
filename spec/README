@@ -1,0 +1,6 @@
+This is a markdown version of the csp specification. To build the html version, follow these steps:
+
+> easy_install markdown
+> markdown -x toc csp.markdown > csp.html
+
+

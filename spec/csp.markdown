@@ -3,8 +3,9 @@
 <div style="list-style: none; width: 40em; font-family: monospace; text-align: justify;">
 
 <!-- These are in the markdown source as h1's to avoid showing up in generated table of contents -->
-<h1>Draft 0.2 Jul 31, 2009</h1>
+<h1>Draft 0.3 Oct 10, 2009</h1>
 <h1>Author: Michael Carter</h1>
+<h1>Email: CarterMichael@gmail.com</h1>
 <h1>Comet Session Protocol </h1>
 
 [TOC]
@@ -85,7 +86,7 @@ The recommended browser API is named `CometSession`, and looks like this:
 
 ### 3.1 URLs ###
 
-The CSP is based on making HTTP requests to pre-defined URLs, relative to the `session` url provided in the `connect` method. Those urls are computed as follows:
+The CSP is based on making HTTP requests to pre-defined URLs, relative to the `SESSION_URL` provided by the user to the `connect` method of the CometSession api. Those urls are computed as follows:
 
     [SESSION_URL]/comet
     [SESSION_URL]/handshake
@@ -122,7 +123,7 @@ When the user creates a new `csp` object, the `csp.readyState` is set to `READYS
     csp.connect('http://example.org/csp')
 
 
-When the user invokes the `connect` method, `csp.readyState` is set to `READYSTATE_OPENING`, and an HTTP request will be made to the `/handshake` url. Either `POST` or `GET` is allowed as the HTTP method. The url querystring (if `GET` is used) or the request body (if `POST` is used) must have a variable named `d` with the value of a json-encoded object. No keys are required to be present in the json object, but additional keys may be present.
+When the user invokes the `connect` method, `csp.readyState` is set to `READYSTATE_OPENING`, and an HTTP request will be made to the `/handshake` url. Either `POST` or `GET` is allowed as the HTTP method. If `GET` is used, the url querystring must have a variable named `d` with the value of a json-encoded object. If `POST` is used, then the `POST` body will be used as the value of `d`. No keys are required to be present in the json object, but additional keys may be present.
 
 The body of the response will similarly contain a json object. The response object must include a `session` key and the value of the actual session key which will be used for all subsequent requests. This request must use the HTTP `GET` verb. No additional keys are required, but additional keys may be present
 
@@ -135,7 +136,7 @@ NOTE: In order to describe the protocol concisely, some examples in this specifi
     HTTP/1.0 POST http://example.org/csp/handshake\r\n
     Content-length:4\r\n
     \r\n
-    d={}
+    {}
     
     (Server):
     
@@ -176,10 +177,9 @@ Specifically, the `PACKET_ENCODING` is used to determine how the packet's receiv
 
 A `PACKET_ENCODING` with the value `0` means that the `PACKET_DATA` is encoded in plain text. 
 
-A `PACKET_ENCODING` with the value `1` means that the `PACKET_DATA` is [URL encoded][]  (or [percent encoded][]). 
+A `PACKET_ENCODING` with the value `1` means that the `PACKET_DATA` is [urlsafe base64 encoded][].
 
-  [URL encoded]: http://tools.ietf.org/html/rfc1738
-  [percent encoded]: http://en.wikipedia.org/wiki/Percent-encoding
+  [urlsafe base64 encoded]: http://tools.ietf.org/html/rfc3548#section-4
 
 A server MUST send packets with `PACKET_ENCODING` = `1` whenever the `PACKET_DATA` contains byte values less than 32 or greater than 126. A server SHOULD use `PACKET_ENCODING` = `0` when `PACKET_DATA` contains only byte values between 32 and 126, inclusive.
 
@@ -206,9 +206,12 @@ A packet batch is an array of packets, represented as valid json, except there s
 
 #### 3.3.3 Variables ####
 
-The goal of the downstream Comet protocol is to allow the client to utilize a wide array of Comet transports in three basic modes: polling, long polling, and streaming. To this end, various variables can be set on the session for the purpose of molding the server's interaction to fit the transport and mode chosen by the client. These variables can be set as querystring arguments on any request. Once these variables are set, they persist for all future requests, until explicitly altered. Any permanent variable that cannot be parsed as specified should be ignored.
+The goal of the downstream Comet protocol is to allow the client to utilize a wide array of Comet transports in three basic modes: polling, long polling, and streaming. To this end, various variables can be set on the session for the purpose of molding the server's interaction to fit the transport and mode chosen by the client. These variables can be set as querystring arguments in the url of any request. Once these variables are set, they persist for all future requests, until explicitly altered. Any permanent variable that cannot be parsed as specified should be ignored. For the purpose of setting variables, POST and GET HTTP requests are treated the same, except a non-empty POST body will override the DATA variable from the querystring (if any.)
 
 There are also per-request variables that have noted functions. These variables are explictly stated to be non-persistent below, meaning that they have no direct bearing on future responses.
+
+
+
 
     Persistent Variables
     --------------------
