@@ -1,11 +1,13 @@
-<p><title>Comet Session Protocol</title>
-<style> ul { list-style: none; } </style>
-<div style="list-style: none; width: 40em; font-family: monospace; text-align: justify;"></p>
+<!DOCTYPE html>
+<html><meta charset="utf-8">
+<link rel="stylesheet" type="text/css" href="csp.css" />
+<title>Comet Session Protocol</title>
+</head>
+
+<body>
+
 <!-- These are in the markdown source as h1's to avoid showing up in generated table of contents -->
-<h1>Draft 0.3 Oct 10, 2009</h1>
-<h1>Author: Michael Carter</h1>
-<h1>Email: CarterMichael@gmail.com</h1>
-<h1>Comet Session Protocol </h1>
+<div id="wrapper"><a name="top"></a>
 
 <div class="toc">
 <ul>
@@ -84,6 +86,12 @@
 </li>
 </ul>
 </div>
+<p><div id="header">
+  <h1 class="title">Comet Session Protocol </h1>
+  <h1 class="version">Draft 0.3 Oct 10, 2009</h1>
+  <h1 class="author">Author: Michael Carter</h1>
+  <h1 class="contact">Email: CarterMichael@gmail.com</h1>
+  </div></p>
 <h2 id="1-introduction">1. Introduction</h2>
 <p>This specification describes the wire protocol that is Comet Session Protocol (CSP), a browser-targeted, bi-directional, and stream-based protocol that is much like TCP, though lacking flow control. CSP is intended to substantially ease the development of real-time web applications, such as chat, document collaboration, games, and stock feeds, to name a few examples.</p>
 <p>By implementing the CSP specification, you can guarantee that your real-time web application server will work in all circumstances, no matter your users' browser or proxy/firewall circumstances, and without user experience or latency tradeoffs. </p>
@@ -204,8 +212,8 @@ Content-type: text/html\r\n
 <h4 id="332-packet-batches">3.3.2 Packet Batches</h4>
 <p>A packet batch is an array of packets, represented as valid json, except there should be no new-line characters (<code>U+000A</code>) in the json representation. There may be json string encoded new line characters (<code>U+005C</code> + <code>U+006E</code>), however. </p>
 <h4 id="333-variables">3.3.3 Variables</h4>
-<p>The goal of the downstream Comet protocol is to allow the client to utilize a wide array of Comet transports in three basic modes: polling, long polling, and streaming. To this end, various variables can be set on the session for the purpose of molding the server's interaction to fit the transport and mode chosen by the client. These variables can be set as querystring arguments in the url of any request. Once these variables are set, they persist for all future requests, until explicitly altered. Any permanent variable that cannot be parsed as specified should be ignored. For the purpose of setting variables, POST and GET HTTP requests are treated the same, except a non-empty POST body will override the DATA variable from the querystring (if any.)</p>
-<p>There are also per-request variables that have noted functions. These variables are explictly stated to be non-persistent below, meaning that they have no direct bearing on future responses.</p>
+<p>The goal of the downstream Comet protocol is to allow the client to utilize a wide array of Comet transports in three basic modes: polling, long polling, and streaming. To this end, various variables can be set on the session for the purpose of molding the server's interaction to fit the transport and mode chosen by the client. These variables can be set as query string arguments in the url of any request. Once these variables are set, they persist for all future requests, until explicitly altered. Any permanent variable that cannot be parsed as specified should be ignored. For the purpose of setting variables, POST and GET HTTP requests are treated the same, except a non-empty POST body will override the DATA variable from the query string (if any).</p>
+<p>There are also per-request variables that have noted functions. These variables are explicitly stated to be non-persistent below, meaning that they have no direct bearing on future responses.</p>
 <pre><code>Persistent Variables
 --------------------
 
@@ -237,11 +245,11 @@ DATA            "d"         ""
 NO_CACHE        "n"         *ignored
 </code></pre>
 <h5 id="3331-duration">3.3.3.1 DURATION</h5>
-<p>The DURATION variable signifies how long the server should leave a Comet request open before completing the response. A value of "0" will cause a response to always be sent immediately after a request is received, thus setting the connection mode to polling. Values of <code>DURATION</code> &gt; <code>0</code> are used in conjunction with streaming and long polling, and will typically range from 10-45 seconds. A <code>DURATION</code> value of <code>0</code> will override <code>IS_STREAMING</code> with the value <code>0</code>, forcing the connection into polling mode.</p>
+<p>The <code>DURATION</code> variable signifies how long the server should leave a Comet request open before completing the response. A value of "0" will cause a response to always be sent immediately after a request is received, thus setting the connection mode to polling. Values of <code>DURATION</code> &gt; <code>0</code> are used in conjunction with streaming and long polling, and will typically range from 10-45 seconds. A <code>DURATION</code> value of <code>0</code> will override <code>IS_STREAMING</code> with the value <code>0</code>, forcing the connection into polling mode.</p>
 <h5 id="3332-is_streaming">3.3.3.2 IS_STREAMING</h5>
 <p>The <code>IS_STREAMING</code> variable signifies to the server if the Comet HTTP response should be completed after a single batch of packets. A value of <code>1</code> for <code>IS_STREAMING</code> means that the server will never complete the HTTP response due to a batch of packets, only when the <code>DURATION</code> has expired. This is the streaming mode. Any other value for <code>IS_STREAMING</code> will cause the server to always complete the HTTP response after sending a batch of packets. In this case, the connection will be in long polling mode.</p>
 <h5 id="3333-interval">3.3.3.3 INTERVAL</h5>
-<p>The <code>INTERVAL</code> varaible signifies the idle interval (time since the connection opened or the last packet batch was sent) after which an empty batch of packets will be sent. The <code>INTERVAL</code> variable will be ignored unless the value of <code>IS_STREAMING</code> is <code>1</code>. The purpose of the <code>INTERVAL</code> variable is to keep intermediaries from closing a streaming connection due to inactivity.</p>
+<p>The <code>INTERVAL</code> variable signifies the idle interval (time since the connection opened or the last packet batch was sent) after which an empty batch of packets will be sent. The <code>INTERVAL</code> variable will be ignored unless the value of <code>IS_STREAMING</code> is <code>1</code>. The purpose of the <code>INTERVAL</code> variable is to keep intermediaries from closing a streaming connection due to inactivity.</p>
 <h5 id="3334-prebuffer_size">3.3.3.4 PREBUFFER_SIZE</h5>
 <p>The <code>PREBUFFER_SIZE</code> variable is parsed as an integer and determines the number of empty bytes (U+0020) to send at the start of the body of each HTTP Comet response. It is ignored unless the value of <code>IS_STREAMING</code> is <code>1</code>. The purpose of the <code>PREBUFFER_SIZE</code> is to meet minimum buffering conditions that cause some intermediaries to delay delivery of initial events in a streaming connection. Obvious example include the IE and Webkit network stacks.</p>
 <h5 id="3335-preamble">3.3.3.5 PREAMBLE</h5>
@@ -265,14 +273,14 @@ NO_CACHE        "n"         *ignored
 <h5 id="33314-ack_id">3.3.3.14 ACK_ID</h5>
 <p>The <code>ACK_ID</code> variable represents the highest packet sequence id that the client previously received. The value of an <code>ACK_ID</code> must be an integer. Any request following the handshake may have an <code>ACK_ID</code>. The <code>ACK_ID</code> is not persisted.</p>
 <h5 id="33315-data">3.3.3.15 DATA</h5>
-<p>The <code>DATA</code> varaible represents a client -&gt; server payload of data encoded as a batch of packets. It is used with requests to <code>/send</code> and <code>/hanshake</code> (in order to specify the value of the handshake object), and does not persist. </p>
+<p>The <code>DATA</code> variable represents a client -&gt; server payload of data encoded as a batch of packets. It is used with requests to <code>/send</code> and <code>/handshake</code> (in order to specify the value of the handshake object), and does not persist. </p>
 <h5 id="33316-no_cache">3.3.3.16 NO_CACHE</h5>
 <p>The <code>NO_CACHE</code> variable is ignored by the server. It can be used by the client to keep a browser or proxy cache from caching the response to a comet, handshake, or send request. If necessary, the client should base the value of <code>NO_CACHE</code> on the javascript Date object. <code>NO_CACHE</code> is not persisted.</p>
 <h4 id="334-server-client-data">3.3.4 Server -&gt; Client Data</h4>
 <p>After a valid handshake, the client must establish a Comet connection with the server. This connection is used for downstream communication (all messages flowing from the server to the browser), and is most simply modeled as a sequence of packets. Each packet has a sequence id and a string payload. The client receives this sequence of packets over a series of HTTP Comet requests. Sometimes, the end of an HTTP Comet response may be lost due to a network or intermediary problem. In fact, an entire HTTP Comet request or response may sometimes be completely lost. For this reason, each time the client re-establishes a Comet request, it must indicate the highest packet sequence id that was previously received via the <code>ACK_ID</code> variable. The server is therefore expected to buffer any packets that have yet to be acknowledged, even if they were previously sent one or more times. If the server fails to receive any acknowledgments after a set amount of time, or the client fails to receive any packets, then the session is over, the session key is expired,the ready state is changed to <code>READY_STATE_CLOSED</code>, and the onclose cb is triggered with the status code <code>ERR_SESSION_TIMEOUT</code>.</p>
 <h5 id="3341-comet-requests">3.3.4.1 Comet Requests</h5>
 <p>After the handshake, the CSP client will immediately make an HTTP request to the <code>/comet</code> url. Whenever the client can determine that the <code>/comet</code> request has completed, successfully or otherwise, the request must be re-issued immediately. There should always be one and only one active <code>/comet</code> request after a successful handshake and before the end of the session.</p>
-<p>When a Comet HTTP request is received by the server, it will first process any variables given in the request. The variables are encoded as a querystring, which can be given as the body of a <code>POST</code> or in the url of a <code>GET</code>, must contain the <code>SESSION_KEY</code> and <code>ACK_ID</code>. If the <code>Last-Event-Id</code> is present in the HTTP headers, its value will be used for the ACK_ID, and will supersede the value given in the querystring, if any. After parsing the querystring and headers, the server will adjust the persistent session variables and remove acknowledged packets from the buffer accordingly. </p>
+<p>When a Comet HTTP request is received by the server, it will first process any variables given in the request. The variables are encoded as a query string, which can be given as the body of a <code>POST</code> or in the url of a <code>GET</code>, must contain the <code>SESSION_KEY</code> and <code>ACK_ID</code>. If the <code>Last-Event-Id</code> is present in the HTTP headers, its value will be used for the ACK_ID, and will supersede the value given in the query string, if any. After parsing the query string and headers, the server will adjust the persistent session variables and remove acknowledged packets from the buffer accordingly. </p>
 <p>If the server is holding a previous <code>/comet</code> request open with the same SESSION_KEY value, then it should immediately complete the response to that connection without sending any more packets in the response.</p>
 <p>The Comet Request must contain the following HTTP headers:</p>
 <pre><code>Pragma: no-cache
@@ -334,7 +342,7 @@ BATCH_SUFFIX = ";"
 <p>When a session is ended, due to a <code>/close</code> request or because server logic caused the session to end, the server will send a null packet.</p>
 <p>Even after the session is ended, a server is expected to continue to buffer any unacknowledged packets until a request is made that acknowledges the packets. The client, likewise, is expected to send a final request to acknowledge the last packet, which should be the <a href="#3314-the-null-packet">null packet</a>. The client should send its final acknowledge HTTP request to the <code>/send</code> url.</p>
 <h3 id="35-content-reflection">3.5 Content reflection</h3>
-<p>Sometimes the client needs a particular static resource in order to make a Comet transport function. The client can make a request to the <code>/reflect</code> url, and include a <code>DATA</code> variable (specified by the querystring parameter <code>data</code>), either in the url or in an HTTP <code>POST</code> body, and a page will be returned with the contents of that variable. </p>
+<p>Sometimes the client needs a particular static resource in order to make a Comet transport function. The client can make a request to the <code>/reflect</code> url, and include a <code>DATA</code> variable (specified by the query string parameter <code>data</code>), either in the url or in an HTTP <code>POST</code> body, and a page will be returned with the contents of that variable. </p>
 <h2 id="4-example-session">4. Example Session</h2>
 <p>This is an example session of a server which acts as a CSP echo server. The client is using a script-tag long polling transport. Communication takes place over two TCP streams designated as <code>TCP1</code> and <code>TCP2</code>.</p>
 <pre><code>Client (TCP1):
@@ -481,4 +489,6 @@ BATCH_SUFFIX = "\r\n"
 SSE = "1"
 IS_STREAMING = "1"
 </code></pre>
-</div>
+<p></div>
+<script type="text/javascript" src="csp.js"></script>
+</body></html></p>

@@ -1,14 +1,22 @@
+<!DOCTYPE html>
+<html><meta charset="utf-8">
+<link rel="stylesheet" type="text/css" href="csp.css" />
 <title>Comet Session Protocol</title>
-<style> ul { list-style: none; } </style>
-<div style="list-style: none; width: 40em; font-family: monospace; text-align: justify;">
+</head>
+
+<body>
 
 <!-- These are in the markdown source as h1's to avoid showing up in generated table of contents -->
-<h1>Draft 0.3 Oct 10, 2009</h1>
-<h1>Author: Michael Carter</h1>
-<h1>Email: CarterMichael@gmail.com</h1>
-<h1>Comet Session Protocol </h1>
+<div id="wrapper"><a name="top"></a>
 
 [TOC]
+
+  <div id="header">
+  <h1 class="title">Comet Session Protocol </h1>
+  <h1 class="version">Draft 0.3 Oct 10, 2009</h1>
+  <h1 class="author">Author: Michael Carter</h1>
+  <h1 class="contact">Email: CarterMichael@gmail.com</h1>
+  </div>
 
 ## 1. Introduction ##
 
@@ -206,9 +214,9 @@ A packet batch is an array of packets, represented as valid json, except there s
 
 #### 3.3.3 Variables ####
 
-The goal of the downstream Comet protocol is to allow the client to utilize a wide array of Comet transports in three basic modes: polling, long polling, and streaming. To this end, various variables can be set on the session for the purpose of molding the server's interaction to fit the transport and mode chosen by the client. These variables can be set as querystring arguments in the url of any request. Once these variables are set, they persist for all future requests, until explicitly altered. Any permanent variable that cannot be parsed as specified should be ignored. For the purpose of setting variables, POST and GET HTTP requests are treated the same, except a non-empty POST body will override the DATA variable from the querystring (if any.)
+The goal of the downstream Comet protocol is to allow the client to utilize a wide array of Comet transports in three basic modes: polling, long polling, and streaming. To this end, various variables can be set on the session for the purpose of molding the server's interaction to fit the transport and mode chosen by the client. These variables can be set as query string arguments in the url of any request. Once these variables are set, they persist for all future requests, until explicitly altered. Any permanent variable that cannot be parsed as specified should be ignored. For the purpose of setting variables, POST and GET HTTP requests are treated the same, except a non-empty POST body will override the DATA variable from the query string (if any).
 
-There are also per-request variables that have noted functions. These variables are explictly stated to be non-persistent below, meaning that they have no direct bearing on future responses.
+There are also per-request variables that have noted functions. These variables are explicitly stated to be non-persistent below, meaning that they have no direct bearing on future responses.
 
 
 
@@ -245,7 +253,7 @@ There are also per-request variables that have noted functions. These variables 
 
 ##### 3.3.3.1 DURATION #####
 
-The DURATION variable signifies how long the server should leave a Comet request open before completing the response. A value of "0" will cause a response to always be sent immediately after a request is received, thus setting the connection mode to polling. Values of `DURATION` > `0` are used in conjunction with streaming and long polling, and will typically range from 10-45 seconds. A `DURATION` value of `0` will override `IS_STREAMING` with the value `0`, forcing the connection into polling mode.
+The `DURATION` variable signifies how long the server should leave a Comet request open before completing the response. A value of "0" will cause a response to always be sent immediately after a request is received, thus setting the connection mode to polling. Values of `DURATION` > `0` are used in conjunction with streaming and long polling, and will typically range from 10-45 seconds. A `DURATION` value of `0` will override `IS_STREAMING` with the value `0`, forcing the connection into polling mode.
 
 ##### 3.3.3.2 IS_STREAMING #####
 
@@ -253,7 +261,7 @@ The `IS_STREAMING` variable signifies to the server if the Comet HTTP response s
 
 ##### 3.3.3.3 INTERVAL #####
 
-The `INTERVAL` varaible signifies the idle interval (time since the connection opened or the last packet batch was sent) after which an empty batch of packets will be sent. The `INTERVAL` variable will be ignored unless the value of `IS_STREAMING` is `1`. The purpose of the `INTERVAL` variable is to keep intermediaries from closing a streaming connection due to inactivity.
+The `INTERVAL` variable signifies the idle interval (time since the connection opened or the last packet batch was sent) after which an empty batch of packets will be sent. The `INTERVAL` variable will be ignored unless the value of `IS_STREAMING` is `1`. The purpose of the `INTERVAL` variable is to keep intermediaries from closing a streaming connection due to inactivity.
 
 ##### 3.3.3.4 PREBUFFER_SIZE #####
 
@@ -305,7 +313,7 @@ The `ACK_ID` variable represents the highest packet sequence id that the client 
 
 ##### 3.3.3.15 DATA ######
 
-The `DATA` varaible represents a client -> server payload of data encoded as a batch of packets. It is used with requests to `/send` and `/hanshake` (in order to specify the value of the handshake object), and does not persist. 
+The `DATA` variable represents a client -> server payload of data encoded as a batch of packets. It is used with requests to `/send` and `/handshake` (in order to specify the value of the handshake object), and does not persist. 
 
 ##### 3.3.3.16 NO_CACHE ######
 
@@ -322,7 +330,7 @@ After a valid handshake, the client must establish a Comet connection with the s
 After the handshake, the CSP client will immediately make an HTTP request to the `/comet` url. Whenever the client can determine that the `/comet` request has completed, successfully or otherwise, the request must be re-issued immediately. There should always be one and only one active `/comet` request after a successful handshake and before the end of the session.
 
 
-When a Comet HTTP request is received by the server, it will first process any variables given in the request. The variables are encoded as a querystring, which can be given as the body of a `POST` or in the url of a `GET`, must contain the `SESSION_KEY` and `ACK_ID`. If the `Last-Event-Id` is present in the HTTP headers, its value will be used for the ACK_ID, and will supersede the value given in the querystring, if any. After parsing the querystring and headers, the server will adjust the persistent session variables and remove acknowledged packets from the buffer accordingly. 
+When a Comet HTTP request is received by the server, it will first process any variables given in the request. The variables are encoded as a query string, which can be given as the body of a `POST` or in the url of a `GET`, must contain the `SESSION_KEY` and `ACK_ID`. If the `Last-Event-Id` is present in the HTTP headers, its value will be used for the ACK_ID, and will supersede the value given in the query string, if any. After parsing the query string and headers, the server will adjust the persistent session variables and remove acknowledged packets from the buffer accordingly. 
 
 If the server is holding a previous `/comet` request open with the same SESSION_KEY value, then it should immediately complete the response to that connection without sending any more packets in the response.
 
@@ -427,7 +435,7 @@ Even after the session is ended, a server is expected to continue to buffer any 
 
 ### 3.5 Content reflection ###
 
-Sometimes the client needs a particular static resource in order to make a Comet transport function. The client can make a request to the `/reflect` url, and include a `DATA` variable (specified by the querystring parameter `data`), either in the url or in an HTTP `POST` body, and a page will be returned with the contents of that variable. 
+Sometimes the client needs a particular static resource in order to make a Comet transport function. The client can make a request to the `/reflect` url, and include a `DATA` variable (specified by the query string parameter `data`), either in the url or in an HTTP `POST` body, and a page will be returned with the contents of that variable. 
 
 ## 4. Example Session ##
 
@@ -588,4 +596,5 @@ This specification doesn't go into browser-specific implementation details of tr
     IS_STREAMING = "1"
 
 </div>
-
+<script type="text/javascript" src="csp.js"></script>
+</body></html>
