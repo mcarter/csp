@@ -14,6 +14,7 @@
   <div id="header">
   <h1 class="title">Comet Session Protocol </h1>
   <h1 class="version">Draft 0.3 Oct 10, 2009</h1>
+  <h1 class="version">$Rev$</h1>
   <h1 class="author">Author: Michael Carter</h1>
   <h1 class="contact">Email: CarterMichael@gmail.com</h1>
   </div>
